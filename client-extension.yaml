@@ -1,0 +1,16 @@
+assemble:
+    - from: vite-build
+      into: static
+my-nutrition-app:
+    cssURLs:
+        - assets/*.css
+    friendlyURLMapping: my-nutrition-app
+    htmlElementName: my-nutrition-app
+    instanceable: true
+    name: My nutrition app
+    portletCategoryName: category.client-extensions
+    type: customElement
+    urls:
+        - assets/*.js
+    useESM: true
+    liferay.virtual.instance.id: mail.ru
