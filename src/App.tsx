@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MealCalendar } from './components/MealCalendar';
 import { PatientSelector } from './components/PatientSelector';
@@ -20,56 +20,20 @@ const AppContent: React.FC<{
   const [entries, setEntries] = useState<MealEntry[]>([]);
   const [reviewsMap, setReviewsMap] = useState<Record<number, Review>>({});
 
-  useEffect(() => {
-    if (userRole !== 'Patient') return;
+  const updateReviewsMap = useCallback((newReview: Review) => {
+    setReviewsMap(prev => ({
+      ...prev,
+      [newReview.r_mealEntryId_c_mealEntryId]: newReview,
+    }));
+  }, []);  
+
+  const loadData = useCallback(async (patientId: number) => {
+    if (!patientId) return;
     
-    const loadData = async () => {
-      try {
-        const entriesData = await getMealEntries(userId);
-        setEntries(entriesData);
-        
-        const reviewsData = await getReviews();
-        const reviewMap: Record<number, Review> = {};
-        reviewsData.forEach((r) => {
-          const entryId = r.r_mealEntryId_c_mealEntryId;
-          if (entryId) {
-            reviewMap[entryId] = r;
-          }
-        });
-        setReviewsMap(reviewMap);
-        
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      }
-    };
-    
-    loadData();
-  }, [userId, userRole]);
-
-  useEffect(() => {
-    if (userRole === 'Nutritionist') {
-      getPatients().then(setPatients);
-    }
-  }, [userRole]);
-
-
-useEffect(() => {
-  const loadData = async () => {
-    const entries = await getMealEntries(userId);
-    setEntries(entries);
-  };
-  loadData();
-}, [userId]);  
-
-
-useEffect(() => {
-  if (userRole !== 'Nutritionist' || !selectedPatientId) return;
-  
-  const loadPatientData = async () => {
     try {
-      const entriesData = await getMealEntries(selectedPatientId);
+      const entriesData = await getMealEntries(patientId);
       setEntries(entriesData);
-      
+
       const reviewsData = await getReviews();
       const reviewMap: Record<number, Review> = {};
       reviewsData.forEach((r) => {
@@ -79,13 +43,27 @@ useEffect(() => {
         }
       });
       setReviewsMap(reviewMap);
+
     } catch (error) {
-      console.error('Failed to load patient data:', error);
+      console.error('Failed to load data:', error);
     }
-  };
-  
-  loadPatientData();
-}, [selectedPatientId, userRole]);
+  }, []);
+
+  useEffect(() => {
+    const targetPatientId = userRole === 'Patient' ? userId : selectedPatientId;
+    if (targetPatientId) {
+      loadData(targetPatientId);
+    } else {
+      setEntries([]);
+      setReviewsMap({});
+    }
+  }, [userId, userRole, selectedPatientId, loadData]);
+
+  useEffect(() => {
+    if (userRole === 'Nutritionist') {
+      getPatients().then(setPatients);
+    }
+  }, [userRole]);
 
   if (userRole === 'Nutritionist') {
     return (
@@ -95,8 +73,8 @@ useEffect(() => {
         <PatientSelector patients={patients} onSelect={setSelectedPatientId} />
         {selectedPatientId && (
           <>
-            <MealCalendar patientId={selectedPatientId} currentUserRole="Nutritionist" />
-            <AnalyticsDashboard entries={entries} reviews={reviewsMap} />
+            <MealCalendar patientId={selectedPatientId} reviews={reviewsMap} onReviewUpdate={updateReviewsMap} currentUserRole="Nutritionist" />
+            <AnalyticsDashboard entries={entries} reviews={reviewsMap}/>
           </>
         )}
       </div>
@@ -107,7 +85,7 @@ useEffect(() => {
     <div style={{ padding: '20px' }}>
       <h1>🥗 My Meal Calendar</h1>
       <p>Hello, <strong>{userName}</strong>!</p>
-      <MealCalendar patientId={userId} currentUserRole="Patient" />
+      <MealCalendar patientId={userId} reviews={reviewsMap} onReviewUpdate={updateReviewsMap} currentUserRole="Patient" />
       <AnalyticsDashboard entries={entries} reviews={reviewsMap} />
     </div>
   );

@@ -14,11 +14,12 @@ import { getStatusKey } from '../utils/statusUtils';
 interface MealCalendarProps {
   patientId: number;
   currentUserRole: 'Patient' | 'Nutritionist';
+  reviews: Record<number, Review>;
+  onReviewUpdate: (review: Review) => void;
 }
 
-export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole }) => {
+export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole, reviews, onReviewUpdate  }) => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [reviewsMap2, setReviewsMap2] = useState<Record<number, Review>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState('');
@@ -33,7 +34,6 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
     if (!patientId) return;
 
     const entries = await getMealEntries(patientId);
-    const allReviews = await getReviews();
 
     const mappedEvents: CalendarEvent[] = entries.map((entry) => ({
       id: entry.id!,
@@ -42,16 +42,7 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
       end: new Date(entry.dateTime),
       extendedProps: entry,
     }));
-
-    const reviewMap: Record<number, Review> = {};
-    allReviews.forEach((r) => { 
-      if (r.r_mealEntryId_c_mealEntryId) {
-        reviewMap[r.r_mealEntryId_c_mealEntryId] = r; 
-      }
-    });
-
     setEvents(mappedEvents);
-    setReviewsMap2(reviewMap);
   }, [patientId]);
 
   useEffect(() => {
@@ -125,7 +116,7 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
 
 const handleEventClick = (clickInfo: EventClickArg) => {
   const eventId = Number(clickInfo.event.id);
-  const review = reviewsMap2[eventId];
+  const review = reviews[eventId];
   if (currentUserRole !== 'Nutritionist') {
     const entry = events.find(e => e.id === eventId)?.extendedProps;
     if (entry) {
@@ -179,7 +170,7 @@ const handleSaveReview = async (status: 'good' | 'attention', comment: string) =
     return;
   }
 
-  const currentReview = reviewsMap2[selectedEventId];
+  const currentReview = reviews[selectedEventId];
 
   const review: Omit<Review, 'createdDate'> = {
     id: currentReview?.id,
@@ -192,7 +183,7 @@ const handleSaveReview = async (status: 'good' | 'attention', comment: string) =
   try {
     const saved = await saveReview(review);
     if (saved.r_mealEntryId_c_mealEntryId) {
-      setReviewsMap2(prev => ({ ...prev, [saved.r_mealEntryId_c_mealEntryId]: saved }));
+      onReviewUpdate(saved);
 
       const newColor = getStatusKey(saved.mealStatus) === 'good' ? '#28a745' : '#ffc107';
       setEvents(prev => prev.map(ev =>
@@ -212,7 +203,7 @@ const handleSaveReview = async (status: 'good' | 'attention', comment: string) =
 };
 
 const getEventColor = (eventId: number): string => {
-  const review = reviewsMap2[eventId];
+  const review = reviews[eventId];
   if (!review) return '#3174ad';
 
   const status = typeof review.mealStatus === 'object' 
