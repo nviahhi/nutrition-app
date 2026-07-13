@@ -17,10 +17,11 @@ interface MealCalendarProps {
   entries: MealEntry[];
   reviews: Record<number, Review>;
   onEntryAdd: (entry: MealEntry) => void;
+  onEntryUpdate: (entry: MealEntry) => void; 
   onReviewUpdate: (review: Review) => void;
 }
 
-export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole, entries, reviews, onEntryAdd, onReviewUpdate  }) => {
+export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole, entries, reviews, onEntryAdd, onEntryUpdate, onReviewUpdate  }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState('');
@@ -78,7 +79,16 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
     const updated = {
       dateTime: event.start.toISOString(),
     };
-    await updateMealEntry(Number(event.id), updated);
+    try {
+      const result = await updateMealEntry(Number(event.id), updated);
+      if (result) {
+        onEntryUpdate(result);
+      }
+    } catch (error) {
+      console.error('Failed to update meal entry:', error);
+      alert('Ошибка при обновлении времени');
+      dropInfo.revert();
+    }
   };
 
   const handleCloseModal = () => {
@@ -250,7 +260,7 @@ return (
       eventDrop={handleEventDrop}
       eventClick={handleEventClick}
       slotMinTime="06:00:00"
-      slotMaxTime="22:00:00"
+      slotMaxTime="24:00:00"
       allDaySlot={false}
       height="auto"
       locale="en"

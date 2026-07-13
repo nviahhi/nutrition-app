@@ -210,19 +210,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ entries,
           All time
         </button>
         <button
-          onClick={() => setPeriod('week')}
-          style={{
-            padding: '6px 16px',
-            backgroundColor: period === 'week' ? '#1976d2' : '#e9ecef',
-            color: period === 'week' ? 'white' : '#333',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-          }}
-        >
-          Week
-        </button>
-        <button
           onClick={() => setPeriod('month')}
           style={{
             padding: '6px 16px',
@@ -234,6 +221,19 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ entries,
           }}
         >
           Month
+        </button>
+        <button
+          onClick={() => setPeriod('week')}
+          style={{
+            padding: '6px 16px',
+            backgroundColor: period === 'week' ? '#1976d2' : '#e9ecef',
+            color: period === 'week' ? 'white' : '#333',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+          }}
+        >
+          Last 7 days
         </button>
       </div>      
       <h2 style={{ marginBottom: '20px' }}>📊 Charts</h2>
@@ -375,8 +375,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ entries,
           backgroundColor: 'white',
           padding: '16px',
           borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          marginTop: '20px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
         }}>
           <h4 style={{ marginTop: 0, marginBottom: '12px' }}>📊 Monthly Overview</h4>
           <BarChart
