@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { DateSelectArg, EventDropArg, EventClickArg } from '@fullcalendar/core';
-import { getMealEntries, createMealEntry, updateMealEntry, getReviews, saveReview, getCurrentUserFromThemeDisplay } from '../api';
+import { createMealEntry, updateMealEntry, saveReview, getCurrentUserFromThemeDisplay } from '../api';
 import { MealEntry, Review, CalendarEvent } from '../types';
 import { ReviewModal } from './ReviewModal';
 import { PatientMealModal } from './PatientMealModal';
@@ -14,12 +14,13 @@ import { getStatusKey } from '../utils/statusUtils';
 interface MealCalendarProps {
   patientId: number;
   currentUserRole: 'Patient' | 'Nutritionist';
+  entries: MealEntry[];
   reviews: Record<number, Review>;
+  onEntryAdd: (entry: MealEntry) => void;
   onReviewUpdate: (review: Review) => void;
 }
 
-export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole, reviews, onReviewUpdate  }) => {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole, entries, reviews, onEntryAdd, onReviewUpdate  }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState('');
@@ -29,25 +30,6 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
   const [selectedMealEntry, setSelectedMealEntry] = useState<MealEntry | null>(null);  
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedSlotInfo, setSelectedSlotInfo] = useState<DateSelectArg | null>(null);  
-
-  const loadData = useCallback(async () => {
-    if (!patientId) return;
-
-    const entries = await getMealEntries(patientId);
-
-    const mappedEvents: CalendarEvent[] = entries.map((entry) => ({
-      id: entry.id!,
-      title: entry.ingredients.substring(0, 40),
-      start: new Date(entry.dateTime),
-      end: new Date(entry.dateTime),
-      extendedProps: entry,
-    }));
-    setEvents(mappedEvents);
-  }, [patientId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   const handleSelect = (selectInfo: DateSelectArg) => {
     if (currentUserRole !== 'Patient') return;
@@ -80,16 +62,7 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
   try {
     const created = await createMealEntry(newEntry);
     if (created.id) {
-      setEvents([
-        ...events,
-        {
-          id: created.id,
-          title: created.ingredients,
-          start: new Date(created.dateTime),
-          end: new Date(created.dateTime),
-          extendedProps: created,
-        },
-      ]);
+      onEntryAdd(created);
       setIsAddModalOpen(false);
       setSelectedSlotInfo(null);
     }
@@ -118,7 +91,7 @@ const handleEventClick = (clickInfo: EventClickArg) => {
   const eventId = Number(clickInfo.event.id);
   const review = reviews[eventId];
   if (currentUserRole !== 'Nutritionist') {
-    const entry = events.find(e => e.id === eventId)?.extendedProps;
+    const entry = entries.find(e => e.id === eventId);
     if (entry) {
       setSelectedMealEntry(entry);
       setSelectedEventTitle(clickInfo.event.title);
@@ -148,11 +121,7 @@ const handlePatientSave = async (newIngredients: string) => {
     });
 
     if (updated) {
-      setEvents(prev => prev.map(ev =>
-        ev.id === updated.id
-          ? { ...ev, title: `${updated.ingredients}`, extendedProps: updated }
-          : ev
-      ));
+      onEntryAdd(updated);
       setIsPatientModalOpen(false);
       setSelectedMealEntry(null);
     }
@@ -184,14 +153,6 @@ const handleSaveReview = async (status: 'good' | 'attention', comment: string) =
     const saved = await saveReview(review);
     if (saved.r_mealEntryId_c_mealEntryId) {
       onReviewUpdate(saved);
-
-      const newColor = getStatusKey(saved.mealStatus) === 'good' ? '#28a745' : '#ffc107';
-      setEvents(prev => prev.map(ev =>
-        ev.id === saved.r_mealEntryId_c_mealEntryId
-          ? { ...ev, color: newColor }
-          : ev
-      ));
-
       setIsModalOpen(false);
       setSelectedEventId(null);
       setCurrentComment('');
@@ -214,15 +175,19 @@ const getEventColor = (eventId: number): string => {
   if (status === 'attention') return '#ffc107';
   return '#3174ad';
 };
-
-const calendarEvents = events.map(ev => ({
-  id: String(ev.id),
-  title: ev.title,
-  start: ev.start,
-  end: ev.end,
-  color: ev.color || getEventColor(ev.id),
-  extendedProps: ev.extendedProps,
-}));
+  
+const calendarEvents = useMemo(() => {
+  return entries
+    .filter((entry): entry is MealEntry & { id: number } => entry.id != null)
+    .map(entry => ({
+      id: String(entry.id),
+      title: entry.ingredients,
+      start: new Date(entry.dateTime),
+      end: new Date(entry.dateTime),
+      color: getEventColor(entry.id),
+      extendedProps: entry,
+    }));
+}, [entries, reviews]);
 
 const today = new Date();
 const tomorrow = new Date(today);
