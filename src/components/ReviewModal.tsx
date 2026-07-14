@@ -66,7 +66,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
           Rate: <strong>{currentStatus || 'not rated'}</strong>
         </p>
 
-        {/* ✅ Поле для комментария */}
         <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>
             Comment (optional):

@@ -21,12 +21,3 @@ export interface LiferayUser {
   name: string;
   roleNames?: string[];
 }
-
-export interface CalendarEvent {
-  id: number;
-  title: string;
-  start: Date;
-  end: Date;
-  color?: string;
-  extendedProps: MealEntry;
-}

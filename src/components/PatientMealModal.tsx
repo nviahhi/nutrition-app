@@ -4,20 +4,24 @@ interface PatientMealModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (ingredients: string) => void;
+  onDelete: () => void;
   mealTitle: string;
   ingredients: string;
   comment?: string | null;
   status?: string | null;
+  isNew?: boolean;
 }
 
 export const PatientMealModal: React.FC<PatientMealModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  onDelete,
   mealTitle,
   ingredients: initialIngredients,
   comment,
   status,
+  isNew = false
 }) => {
   const [ingredients, setIngredients] = useState(initialIngredients || '');
 
@@ -33,6 +37,13 @@ export const PatientMealModal: React.FC<PatientMealModalProps> = ({
     onSave(ingredients);
     onClose();
   };
+
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete entry?')) {
+      onDelete();
+      onClose();
+    }
+  };  
 
   return (
     <div style={{
@@ -104,6 +115,21 @@ export const PatientMealModal: React.FC<PatientMealModalProps> = ({
         )}
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          {!isNew && (
+            <button
+              onClick={handleDelete}
+              style={{
+                padding: '8px 16px',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                marginRight: 'auto',
+              }}
+            >
+              🗑️ Delete
+            </button>
+          )}
+
           <button
             onClick={onClose}
             style={{
@@ -127,7 +153,7 @@ export const PatientMealModal: React.FC<PatientMealModalProps> = ({
               cursor: 'pointer',
             }}
           >
-            💾 Save
+            Save
           </button>
         </div>
       </div>

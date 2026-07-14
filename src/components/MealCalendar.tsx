@@ -4,8 +4,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { DateSelectArg, EventDropArg, EventClickArg } from '@fullcalendar/core';
-import { createMealEntry, updateMealEntry, saveReview, getCurrentUserFromThemeDisplay } from '../api';
-import { MealEntry, Review, CalendarEvent } from '../types';
+import { createMealEntry, updateMealEntry, deleteMealEntry, saveReview, getCurrentUserFromThemeDisplay } from '../api';
+import { MealEntry, Review } from '../types';
 import { ReviewModal } from './ReviewModal';
 import { PatientMealModal } from './PatientMealModal';
 import { AddMealModal } from './AddMealModal';
@@ -17,11 +17,12 @@ interface MealCalendarProps {
   entries: MealEntry[];
   reviews: Record<number, Review>;
   onEntryAdd: (entry: MealEntry) => void;
-  onEntryUpdate: (entry: MealEntry) => void; 
+  onEntryUpdate: (entry: MealEntry) => void;
+  onEntryDelete: (entryId: number) => void;  
   onReviewUpdate: (review: Review) => void;
 }
 
-export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole, entries, reviews, onEntryAdd, onEntryUpdate, onReviewUpdate  }) => {
+export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole, entries, reviews, onEntryAdd, onEntryUpdate, onEntryDelete, onReviewUpdate  }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState('');
@@ -46,32 +47,46 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
   };
 
   const handleAddMeal = async (ingredients: string) => {
-  if (!selectedSlotInfo) return;
+    if (!selectedSlotInfo) return;
 
-  const patientIdNumber = Number(patientId);
-  if (isNaN(patientIdNumber) || patientIdNumber <= 0) {
-    console.error('Invalid patientId:', patientId);
-    return;
-  }
+    const patientIdNumber = Number(patientId);
+    if (isNaN(patientIdNumber) || patientIdNumber <= 0) {
+      console.error('Invalid patientId:', patientId);
+      return;
+    }
 
-  const newEntry: Omit<MealEntry, 'id' | 'createdDate'> = {
-    dateTime: selectedSlotInfo.start.toISOString(),
-    ingredients: ingredients || 'not defined',
-    r_patientId_userId: patientIdNumber,
+    const newEntry: Omit<MealEntry, 'id' | 'createdDate'> = {
+      dateTime: selectedSlotInfo.start.toISOString(),
+      ingredients: ingredients || 'not defined',
+      r_patientId_userId: patientIdNumber,
+    };
+
+    try {
+      const created = await createMealEntry(newEntry);
+      if (created.id) {
+        onEntryAdd(created);
+        setIsAddModalOpen(false);
+        setSelectedSlotInfo(null);
+      }
+    } catch (error) {
+      console.error('Failed to create meal entry:', error);
+      alert('Error');
+    }
   };
 
-  try {
-    const created = await createMealEntry(newEntry);
-    if (created.id) {
-      onEntryAdd(created);
-      setIsAddModalOpen(false);
-      setSelectedSlotInfo(null);
+  const handleDeleteEntry = async () => {
+    if (!selectedMealEntry?.id) return;
+
+    try {
+      await deleteMealEntry(selectedMealEntry.id);
+      onEntryDelete(selectedMealEntry.id);
+      setIsPatientModalOpen(false);
+      setSelectedMealEntry(null);
+    } catch (error) {
+      console.error('Failed to delete meal entry:', error);
+      alert('Ошибка при удалении записи');
     }
-  } catch (error) {
-    console.error('Failed to create meal entry:', error);
-    alert('Error');
-  }
-};
+  };
 
   const handleEventDrop = async (dropInfo: EventDropArg) => {
     const { event } = dropInfo;
@@ -214,10 +229,12 @@ return (
           setSelectedMealEntry(null);
         }}
         onSave={handlePatientSave}
+        onDelete={handleDeleteEntry} 
         mealTitle={selectedEventTitle}
         ingredients={selectedMealEntry?.ingredients || ''}
         comment={currentComment}
         status={currentEventStatus}
+        isNew={!selectedMealEntry?.id}
       />
     )}
     {currentUserRole === 'Patient' && (

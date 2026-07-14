@@ -91,7 +91,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
               cursor: 'pointer',
             }}
           >
-            ✅ Add
+            Add
           </button>
         </div>
       </div>

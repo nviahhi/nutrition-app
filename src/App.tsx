@@ -30,6 +30,10 @@ const AppContent: React.FC<{
     ));
   }, []);
 
+  const deleteEntry = useCallback((entryId: number) => {
+    setEntries(prev => prev.filter(entry => entry.id !== entryId));
+  }, []); 
+
   const updateReviewsMap = useCallback((newReview: Review) => {
     setReviewsMap(prev => ({
       ...prev,
@@ -83,7 +87,7 @@ const AppContent: React.FC<{
         <PatientSelector patients={patients} onSelect={setSelectedPatientId} />
         {selectedPatientId && (
           <>
-            <MealCalendar patientId={selectedPatientId} entries={entries} reviews={reviewsMap} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onReviewUpdate={updateReviewsMap} currentUserRole="Nutritionist" />
+            <MealCalendar patientId={selectedPatientId} entries={entries} reviews={reviewsMap} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onEntryDelete={deleteEntry} onReviewUpdate={updateReviewsMap} currentUserRole="Nutritionist" />
             <AnalyticsDashboard entries={entries} reviews={reviewsMap}/>
           </>
         )}
@@ -95,7 +99,7 @@ const AppContent: React.FC<{
     <div style={{ padding: '20px' }}>
       <h1>🥗 My Meal Calendar</h1>
       <p>Hello, <strong>{userName}</strong>!</p>
-      <MealCalendar patientId={userId} entries={entries} reviews={reviewsMap} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onReviewUpdate={updateReviewsMap} currentUserRole="Patient" />
+      <MealCalendar patientId={userId} entries={entries} reviews={reviewsMap} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onEntryDelete={deleteEntry} onReviewUpdate={updateReviewsMap} currentUserRole="Patient" />
       <AnalyticsDashboard entries={entries} reviews={reviewsMap} />
     </div>
   );
