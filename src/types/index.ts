@@ -2,6 +2,7 @@ export interface MealEntry {
   id?: number;
   dateTime: string;       
   ingredients: string;
+  comment?: string;
   r_patientId_userId: number; 
   createdDate?: string;
 }

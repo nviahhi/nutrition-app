@@ -27,7 +27,8 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState('');
   const [currentEventStatus, setCurrentEventStatus] = useState<string | null>(null);
-  const [currentComment, setCurrentComment] = useState<string | null>(null);
+  const [doctorComment, setDoctorComment] = useState<string | null>(null);
+  const [patientComment, setPatientComment] = useState<string | null>(null);
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [selectedMealEntry, setSelectedMealEntry] = useState<MealEntry | null>(null);  
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -46,7 +47,7 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
     setIsAddModalOpen(true);
   };
 
-  const handleAddMeal = async (ingredients: string) => {
+  const handleAddMeal = async (ingredients: string, comment: string) => {
     if (!selectedSlotInfo) return;
 
     const patientIdNumber = Number(patientId);
@@ -57,7 +58,8 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
 
     const newEntry: Omit<MealEntry, 'id' | 'createdDate'> = {
       dateTime: selectedSlotInfo.start.toISOString(),
-      ingredients: ingredients || 'not defined',
+      ingredients: ingredients || 'Not defined',
+      comment: comment || '',
       r_patientId_userId: patientIdNumber,
     };
 
@@ -109,44 +111,44 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedEventId(null);
-    setCurrentComment('');
+    setDoctorComment('');
   }; 
 
 const handleEventClick = (clickInfo: EventClickArg) => {
   const eventId = Number(clickInfo.event.id);
   const review = reviews[eventId];
-  if (currentUserRole !== 'Nutritionist') {
-    const entry = entries.find(e => e.id === eventId);
-    if (entry) {
-      setSelectedMealEntry(entry);
-      setSelectedEventTitle(clickInfo.event.title);
-      setCurrentComment(review?.comment || '');
-      setCurrentEventStatus(review ? getStatusKey(review.mealStatus) : null);
-      setIsPatientModalOpen(true);
-    }
-    return;
-  }
-
+  const entry = entries.find(e => e.id === eventId);
+  
   const status = review ? getStatusKey(review.mealStatus) : null;
-  const comment = review?.comment || '';
+  const doctorComment = review?.comment || '';
+  const patientComment = entry?.comment || '';
 
-  setSelectedEventId(eventId);
   setSelectedEventTitle(clickInfo.event.title);
   setCurrentEventStatus(status);
-  setCurrentComment(comment);
-  setIsModalOpen(true);
+  setDoctorComment(doctorComment);
+
+  if (currentUserRole === 'Nutritionist') {
+    setSelectedEventId(eventId);
+    setPatientComment(patientComment);
+    setIsModalOpen(true);
+  } else {
+    if (entry) {
+      setSelectedMealEntry(entry);
+      setIsPatientModalOpen(true);
+    }
+  }
 };
 
-
-const handlePatientSave = async (newIngredients: string) => {
+const handlePatientSave = async (newIngredients: string, newComment: string) => {
   if (!selectedMealEntry) return;
   try {
     const updated = await updateMealEntry(selectedMealEntry.id!, {
       ingredients: newIngredients,
+      comment: newComment
     });
 
     if (updated) {
-      onEntryAdd(updated);
+      onEntryUpdate(updated);
       setIsPatientModalOpen(false);
       setSelectedMealEntry(null);
     }
@@ -180,7 +182,7 @@ const handleSaveReview = async (status: 'good' | 'attention', comment: string) =
       onReviewUpdate(saved);
       setIsModalOpen(false);
       setSelectedEventId(null);
-      setCurrentComment('');
+      setDoctorComment('');
     }
   } catch (error) {
     console.error('Failed to save review:', error);
@@ -232,7 +234,8 @@ return (
         onDelete={handleDeleteEntry} 
         mealTitle={selectedEventTitle}
         ingredients={selectedMealEntry?.ingredients || ''}
-        comment={currentComment}
+        comment={selectedMealEntry?.comment || ''} 
+        doctorComment={doctorComment}
         status={currentEventStatus}
         isNew={!selectedMealEntry?.id}
       />
@@ -253,7 +256,8 @@ return (
         onClose={handleCloseModal}
         onSave={handleSaveReview}
         currentStatus={currentEventStatus}
-        currentComment={currentComment}
+        currentComment={doctorComment}
+        patientComment={patientComment}
         mealTitle={selectedEventTitle}
       />
     )}    

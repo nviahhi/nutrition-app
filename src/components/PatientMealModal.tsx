@@ -3,11 +3,12 @@ import React, { useState, useEffect  } from 'react';
 interface PatientMealModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (ingredients: string) => void;
+  onSave: (ingredients: string, comment: string) => void;
   onDelete: () => void;
   mealTitle: string;
   ingredients: string;
   comment?: string | null;
+  doctorComment?: string | null;
   status?: string | null;
   isNew?: boolean;
 }
@@ -17,24 +18,26 @@ export const PatientMealModal: React.FC<PatientMealModalProps> = ({
   onClose,
   onSave,
   onDelete,
-  mealTitle,
   ingredients: initialIngredients,
-  comment,
+  comment: initialComment,
+  doctorComment,
   status,
   isNew = false
 }) => {
   const [ingredients, setIngredients] = useState(initialIngredients || '');
+  const [comment, setComment] = useState(initialComment || '');
 
   useEffect(() => {
     if (isOpen) {
       setIngredients(initialIngredients || '');
+      setComment(initialComment || '');
     }
-  }, [isOpen, initialIngredients]);
+  }, [isOpen, initialIngredients, initialComment]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
-    onSave(ingredients);
+    onSave(ingredients, comment);
     onClose();
   };
 
@@ -86,7 +89,28 @@ export const PatientMealModal: React.FC<PatientMealModalProps> = ({
           />
         </div>
 
-        {comment && (
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>
+            💬 Comment or question (optional):
+          </label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="For example: What are some good alternatives to the soup?"
+            rows={2}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+              fontSize: '14px',
+              resize: 'vertical',
+              fontFamily: 'inherit',
+            }}
+          />
+        </div>        
+
+        {doctorComment && (
           <div style={{
             marginBottom: '16px',
             padding: '12px',
@@ -97,7 +121,7 @@ export const PatientMealModal: React.FC<PatientMealModalProps> = ({
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>
               💬 Nutritionist comments:
             </label>
-            <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>{comment}</p>
+            <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>{doctorComment}</p>
           </div>
         )}
 

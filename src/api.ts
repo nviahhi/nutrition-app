@@ -134,6 +134,7 @@ export async function createMealEntry(entry: Omit<MealEntry, 'id' | 'createdDate
   const payload = {
     dateTime: entry.dateTime,
     ingredients: entry.ingredients,
+    comment: entry.comment || '',
     r_patientId_userId: patientId
   };
 

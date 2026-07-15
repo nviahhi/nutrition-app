@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface AddMealModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (ingredients: string) => void;
+  onSave: (ingredients: string, comment: string) => void;
 }
 
 export const AddMealModal: React.FC<AddMealModalProps> = ({
@@ -12,17 +12,20 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
   onSave,
 }) => {
   const [ingredients, setIngredients] = useState('');
+  const [comment, setComment] = useState('');
 
   if (!isOpen) return null;
 
   const handleSave = () => {
-    onSave(ingredients.trim());
+    onSave(ingredients.trim(), comment.trim());
     setIngredients('');
+    setComment('');
     onClose();
   };
 
   const handleClose = () => {
     setIngredients('');
+    setComment('');
     onClose();
   };
 
@@ -66,6 +69,27 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
             }}
           />
         </div>
+
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>
+            💬 Comment or question (optional):
+          </label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="For example: What are some good alternatives to the soup?"
+            rows={2}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+              fontSize: '14px',
+              resize: 'vertical',
+              fontFamily: 'inherit',
+            }}
+          />
+        </div>        
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           <button

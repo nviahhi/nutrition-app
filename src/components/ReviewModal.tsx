@@ -6,6 +6,7 @@ interface ReviewModalProps {
   onSave: (status: 'good' | 'attention', comment: string) => void;
   currentStatus: string | null;
   currentComment?: string | null;
+  patientComment?: string | null;
   mealTitle: string;
 }
 
@@ -15,6 +16,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   onSave,
   currentStatus,
   currentComment,
+  patientComment,
   mealTitle,
 }) => {
 
@@ -62,6 +64,22 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
         <p style={{ marginBottom: '8px', color: '#555' }}>
           <strong>{mealTitle}</strong>
         </p>
+        
+        {patientComment && (
+          <div style={{
+            marginBottom: '16px',
+            padding: '12px',
+            backgroundColor: '#e3f2fd',
+            borderRadius: '6px',
+            borderLeft: '4px solid #1976d2',
+          }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>
+              💬 Вопрос/комментарий пациента:
+            </label>
+            <p style={{ margin: 0, fontSize: '14px', color: '#333' }}>{patientComment}</p>
+          </div>
+        )}
+
         <p style={{ marginBottom: '16px', color: '#888', fontSize: '14px' }}>
           Rate: <strong>{currentStatus || 'not rated'}</strong>
         </p>
