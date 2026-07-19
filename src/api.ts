@@ -1,5 +1,5 @@
 
-import { LiferayUser, MealEntry, Review } from './types';
+import { LiferayUser, MealEntry, Review, DailyReview } from './types';
 
 const LIFERAY_URL = window.location.origin || 'http://localhost:8080';
 
@@ -226,5 +226,44 @@ export async function getPatients(): Promise<LiferayUser[]> {
   } catch (error) {
     console.error('Failed to fetch patients:', error);
     return [];
+  }
+}
+
+export async function getDailyReview(date: string, patientId: number): Promise<DailyReview | null> {
+  try {
+    const response = await request<{ items: DailyReview[] }>(
+      `/o/c/dailyreviews?filter=date%20eq%20'${date}'%20and%20r_dRPatientId_userId%20eq%20'${patientId}'`
+    );
+    return response.items?.[0] || null;
+  } catch (error) {
+    console.error('Failed to get daily review:', error);
+    return null;
+  }
+}
+
+export async function getDailyReviews(patientId?: number): Promise<DailyReview[]> {
+  try {
+    const url = patientId 
+      ? `/o/c/dailyreviews?pageSize=-1&filter=r_dRPatientId_userId%20eq%20'${patientId}'`
+      : '/o/c/dailyreviews?pageSize=-1';
+    const response = await request<{ items: DailyReview[] }>(url);
+    return response.items || [];
+  } catch (error) {
+    console.error('Failed to get daily reviews:', error);
+    return [];
+  }
+}
+
+export async function saveDailyReview(review: Omit<DailyReview, 'createdDate'>): Promise<DailyReview> {
+  if (review.id) {
+    return request<DailyReview>(`/o/c/dailyreviews/${review.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(review),
+    });
+  } else {
+    return request<DailyReview>('/o/c/dailyreviews', {
+      method: 'POST',
+      body: JSON.stringify(review),
+    });
   }
 }

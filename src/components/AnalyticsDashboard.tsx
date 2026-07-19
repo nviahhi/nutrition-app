@@ -11,22 +11,32 @@ const YAxis = require('recharts').YAxis;
 const LineChart = require('recharts').LineChart;
 const Line = require('recharts').Line;
 const CartesianGrid = require('recharts').CartesianGrid;
-import { MealEntry, Review } from '../types';
+import { MealEntry, Review, DailyReview } from '../types';
 import { getStatusKey } from '../utils/statusUtils';
 
 
 interface AnalyticsDashboardProps {
   entries: MealEntry[];
   reviews: Record<number, Review>;
+  dailyReviews: DailyReview[];
 }
 
 type Period = 'all' | 'week' | 'month';
 
 const COLORS = ['#28a745', '#ffc107', '#6c757d'];
 
-export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ entries, reviews }) => {
+
+export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ entries, reviews, dailyReviews }) => {
 
   const [period, setPeriod] = useState<Period>('week');
+
+  const goodDays = dailyReviews.filter(r => {
+    const status = getStatusKey(r.dateStatus);
+    return status === 'good';
+  }).length;
+
+  const totalDays = entries.length;
+  const goodDaysPercent = totalDays > 0 ? Math.round((goodDays / totalDays) * 100) : 0;
 
   const filteredEntries = useMemo(() => {
     const now = new Date();
@@ -264,6 +274,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ entries,
           </div>
           <div style={{ fontSize: '14px', color: '#555' }}>% good</div>
         </div>
+        <div style={{ backgroundColor: '#e8f5e9', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#2e7d32' }}>
+            {goodDaysPercent}%
+          </div>
+          <div style={{ fontSize: '14px', color: '#555' }}>Good days</div>
+        </div>        
       </div>
 
       <div style={{

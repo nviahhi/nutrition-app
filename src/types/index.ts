@@ -22,3 +22,13 @@ export interface LiferayUser {
   name: string;
   roleNames?: string[];
 }
+
+export interface DailyReview {
+  id?: number;
+  r_dRPatientId_userId: number;     
+  r_dRNutritionistId_userId: number;
+  date: string; 
+  dateStatus: string | { key: string; name: string } | null;
+  comment?: string;
+  createdDate?: string;
+}

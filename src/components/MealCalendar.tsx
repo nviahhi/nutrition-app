@@ -4,25 +4,28 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { DateSelectArg, EventDropArg, EventClickArg } from '@fullcalendar/core';
-import { createMealEntry, updateMealEntry, deleteMealEntry, saveReview, getCurrentUserFromThemeDisplay } from '../api';
-import { MealEntry, Review } from '../types';
+import { createMealEntry, updateMealEntry, deleteMealEntry, saveReview, getCurrentUserFromThemeDisplay, saveDailyReview } from '../api';
+import { MealEntry, Review, DailyReview } from '../types';
 import { ReviewModal } from './ReviewModal';
 import { PatientMealModal } from './PatientMealModal';
 import { AddMealModal } from './AddMealModal';
+import { DailyReviewModal } from './DailyReviewModal';
 import { getStatusKey } from '../utils/statusUtils';
 
 interface MealCalendarProps {
   patientId: number;
   currentUserRole: 'Patient' | 'Nutritionist';
   entries: MealEntry[];
-  reviews: Record<number, Review>;
+  reviews: Record<number, Review>;  
+  dailyReviews: DailyReview[];
   onEntryAdd: (entry: MealEntry) => void;
   onEntryUpdate: (entry: MealEntry) => void;
   onEntryDelete: (entryId: number) => void;  
   onReviewUpdate: (review: Review) => void;
+  onDailyReviewUpdate: (review: DailyReview) => void;
 }
 
-export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole, entries, reviews, onEntryAdd, onEntryUpdate, onEntryDelete, onReviewUpdate  }) => {
+export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUserRole, entries, reviews, dailyReviews, onEntryAdd, onEntryUpdate, onEntryDelete, onReviewUpdate, onDailyReviewUpdate  }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState('');
@@ -33,6 +36,9 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
   const [selectedMealEntry, setSelectedMealEntry] = useState<MealEntry | null>(null);  
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedSlotInfo, setSelectedSlotInfo] = useState<DateSelectArg | null>(null);  
+  const [isDailyReviewModalOpen, setIsDailyReviewModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [dailyReview, setDailyReview] = useState<DailyReview | null>(null);
 
   const handleSelect = (selectInfo: DateSelectArg) => {
     if (currentUserRole !== 'Patient') return;
@@ -190,6 +196,71 @@ const handleSaveReview = async (status: 'good' | 'attention', comment: string) =
   }
 };
 
+const dailyReviewsMap = useMemo(() => {
+  const map: Record<string, DailyReview> = {};
+  dailyReviews.forEach(r => {
+    if (r.date) {
+      const key = r.date.replace(/\.\d{3}Z$/, 'Z');
+      map[key] = r;
+    }
+  });
+  return map;
+}, [dailyReviews]);
+
+const handleDayClick = (arg: any) => {
+  if (currentUserRole !== 'Nutritionist') return;
+    const year = arg.date.getFullYear();
+    const month = String(arg.date.getMonth() + 1).padStart(2, '0');
+    const day = String(arg.date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`; 
+    const formattedDate = arg.date.toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const review = dailyReviewsMap[`${dateStr}T00:00:00Z`];
+    setSelectedDate(`${dateStr}T00:00:00Z`);
+    setDailyReview(review || null);
+    setIsDailyReviewModalOpen(true);
+  };
+
+const handleCloseDailyReviewModal = () => {
+  setIsDailyReviewModalOpen(false);
+  setSelectedDate('');
+  setDailyReview(null);
+};
+
+const handleSaveDailyReview = async (status: 'good' | 'attention', comment: string) => {
+  if (!selectedDate) return;
+
+  const currentUser = getCurrentUserFromThemeDisplay();
+  if (!currentUser) {
+    alert('Ошибка: пользователь не авторизован');
+    return;
+  }
+
+  const review: Omit<DailyReview, 'createdDate'> = {
+    id: dailyReview?.id,
+    r_dRPatientId_userId: patientId,
+    r_dRNutritionistId_userId: Number(currentUser.userId),
+    date: selectedDate,
+    dateStatus: status,
+    comment: comment,
+  };
+
+  try {
+    const saved = await saveDailyReview(review);
+    setDailyReview(saved);
+    setIsDailyReviewModalOpen(false);
+    if (onDailyReviewUpdate) {
+      onDailyReviewUpdate(saved);
+    }
+  } catch (error) {
+    console.error('Failed to save daily review:', error);
+    alert('Ошибка при сохранении оценки дня');
+  }
+};
+
 const getEventColor = (eventId: number): string => {
   const review = reviews[eventId];
   if (!review) return '#3174ad';
@@ -201,6 +272,33 @@ const getEventColor = (eventId: number): string => {
   if (status === 'good') return '#28a745';
   if (status === 'attention') return '#ffc107';
   return '#3174ad';
+};
+
+const renderDayCellContent = (arg: any) => {
+  const year = arg.date.getFullYear();
+  const month = String(arg.date.getMonth() + 1).padStart(2, '0');
+  const day = String(arg.date.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+  const review = dailyReviewsMap[`${dateStr}T00:00:00Z`];
+  if (!review) return null;
+
+  const status = getStatusKey(review.dateStatus);
+  const color = status === 'good' ? '#28a745' : '#ffc107';
+
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      marginTop: '2px',
+    }}>
+      <div style={{
+        width: '8px',
+        height: '8px',
+        borderRadius: '50%',
+        backgroundColor: color,
+      }} />
+    </div>
+  );
 };
   
 const calendarEvents = useMemo(() => {
@@ -260,7 +358,17 @@ return (
         patientComment={patientComment}
         mealTitle={selectedEventTitle}
       />
-    )}    
+    )}  
+    {currentUserRole === 'Nutritionist' && (
+      <DailyReviewModal
+        isOpen={isDailyReviewModalOpen}
+        onClose={handleCloseDailyReviewModal}
+        onSave={handleSaveDailyReview}
+        currentStatus={dailyReview ? getStatusKey(dailyReview.dateStatus) : null}
+        currentComment={dailyReview?.comment || ''}
+        date={selectedDate}
+      />
+    )}      
     <FullCalendar
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
       initialView="timeGridWeek"
@@ -280,6 +388,8 @@ return (
       }}        
       eventDrop={handleEventDrop}
       eventClick={handleEventClick}
+      dayCellContent={renderDayCellContent} 
+      dateClick={handleDayClick} 
       slotMinTime="06:00:00"
       slotMaxTime="24:00:00"
       allDaySlot={false}

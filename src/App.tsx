@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { MealCalendar } from './components/MealCalendar';
 import { PatientSelector } from './components/PatientSelector';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { getCurrentUserWithRole, getPatients, getMealEntries, getReviews } from './api';
-import { LiferayUser, MealEntry, Review } from './types';
+import { getCurrentUserWithRole, getPatients, getMealEntries, getReviews, getDailyReviews } from './api';
+import { LiferayUser, MealEntry, Review, DailyReview } from './types';
 import './styles.css';
 
 
@@ -19,6 +19,7 @@ const AppContent: React.FC<{
   const [patients, setPatients] = useState<LiferayUser[]>([]);
   const [entries, setEntries] = useState<MealEntry[]>([]);
   const [reviewsMap, setReviewsMap] = useState<Record<number, Review>>({});
+  const [dailyReviews, setDailyReviews] = useState<DailyReview[]>([]);
 
   const addEntries = useCallback((newEntry: MealEntry) => {
     setEntries(prev => [...prev, newEntry]);
@@ -41,6 +42,18 @@ const AppContent: React.FC<{
     }));
   }, []);  
 
+  const updateDailyReview = useCallback((saved: DailyReview) => {
+    setDailyReviews(prev => {
+      const existingIndex = prev.findIndex(r => r.date === saved.date);
+      if (existingIndex >= 0) {
+        const newReviews = [...prev];
+        newReviews[existingIndex] = saved;
+        return newReviews;
+      }
+      return [...prev, saved];
+    });
+  }, []);
+
   const loadData = useCallback(async (patientId: number) => {
     if (!patientId) return;
     
@@ -57,6 +70,8 @@ const AppContent: React.FC<{
         }
       });
       setReviewsMap(reviewMap);
+      const dailyReviewsData = await getDailyReviews(patientId);
+      setDailyReviews(dailyReviewsData);
 
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -87,8 +102,8 @@ const AppContent: React.FC<{
         <PatientSelector patients={patients} onSelect={setSelectedPatientId} />
         {selectedPatientId && (
           <>
-            <MealCalendar patientId={selectedPatientId} entries={entries} reviews={reviewsMap} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onEntryDelete={deleteEntry} onReviewUpdate={updateReviewsMap} currentUserRole="Nutritionist" />
-            <AnalyticsDashboard entries={entries} reviews={reviewsMap}/>
+            <MealCalendar patientId={selectedPatientId} entries={entries} reviews={reviewsMap} dailyReviews={dailyReviews} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onEntryDelete={deleteEntry} onReviewUpdate={updateReviewsMap} onDailyReviewUpdate={updateDailyReview} currentUserRole="Nutritionist" />
+            <AnalyticsDashboard entries={entries} reviews={reviewsMap} dailyReviews={dailyReviews}/>
           </>
         )}
       </div>
@@ -99,8 +114,8 @@ const AppContent: React.FC<{
     <div style={{ padding: '20px' }}>
       <h1>🥗 My Meal Calendar</h1>
       <p>Hello, <strong>{userName}</strong>!</p>
-      <MealCalendar patientId={userId} entries={entries} reviews={reviewsMap} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onEntryDelete={deleteEntry} onReviewUpdate={updateReviewsMap} currentUserRole="Patient" />
-      <AnalyticsDashboard entries={entries} reviews={reviewsMap} />
+      <MealCalendar patientId={userId} entries={entries} reviews={reviewsMap} dailyReviews={dailyReviews} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onEntryDelete={deleteEntry} onReviewUpdate={updateReviewsMap} onDailyReviewUpdate={updateDailyReview} currentUserRole="Patient" />
+      <AnalyticsDashboard entries={entries} reviews={reviewsMap} dailyReviews={dailyReviews}/>
     </div>
   );
 };
