@@ -257,7 +257,7 @@ const handleSaveDailyReview = async (status: 'good' | 'attention', comment: stri
     }
   } catch (error) {
     console.error('Failed to save daily review:', error);
-    alert('Ошибка при сохранении оценки дня');
+    alert('Error when saving daily review');
   }
 };
 
@@ -285,18 +285,61 @@ const renderDayCellContent = (arg: any) => {
   const status = getStatusKey(review.dateStatus);
   const color = status === 'good' ? '#28a745' : '#ffc107';
 
+  const tooltipText = review.comment 
+    ? `Rate: ${status === 'good' ? '✅ Good day' : '⚠️ Attention'}\nComment: ${review.comment}`
+    : `Rate: ${status === 'good' ? '✅ Good day' : '⚠️ Attention'}`;
+
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      marginTop: '2px',
-    }}>
-      <div style={{
-        width: '8px',
-        height: '8px',
-        borderRadius: '50%',
-        backgroundColor: color,
-      }} />
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        marginTop: '2px',
+        position: 'relative',
+        zIndex: 1
+      }}
+      className="day-tooltip-container"
+    >
+      <div
+        style={{
+          width: '8px',
+          height: '8px',
+          borderRadius: '50%',
+          backgroundColor: color,
+        }}
+      />
+      <div
+        className="tooltip-text"
+        style={{
+          display: 'none',
+          position: 'absolute',
+          top: '180%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#333',
+          color: '#fff',
+          padding: '6px 12px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          whiteSpace: 'pre-line',
+          width: '200px',
+          zIndex: 9999,
+          textAlign: 'left',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+        }}
+      >
+        {tooltipText}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            border: '6px solid transparent',
+            borderBottomColor: '#333',
+          }}
+        />
+      </div>
     </div>
   );
 };

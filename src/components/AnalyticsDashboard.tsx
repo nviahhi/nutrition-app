@@ -30,31 +30,66 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ entries,
 
   const [period, setPeriod] = useState<Period>('week');
 
-  const goodDays = dailyReviews.filter(r => {
+  const getStartDate = (period: Period): Date => {
+    const now = new Date();
+    switch (period) {
+      case 'week': {
+        const date = new Date(now);
+        date.setDate(date.getDate() - 7);
+        return date;
+      }
+      case 'month': {
+        const date = new Date(now);
+        date.setMonth(date.getMonth() - 1);
+        return date;
+      }
+      default:
+        return new Date(0); 
+    }
+  };
+
+  const startDate = getStartDate(period);
+  const endDate = new Date();
+
+  const getTotalDaysInPeriod = (start: Date, end: Date): number => {
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getTotalDaysAllTime = (entries: MealEntry[]): number => {
+    if (entries.length === 0) return 0;
+
+    const firstDate = new Date(Math.min(...entries.map(e => new Date(e.dateTime).getTime())));
+    const today = new Date();
+    
+    const diffTime = today.getTime() - firstDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 1;
+  };
+
+  const filteredEntries = useMemo(() => {
+    if (period === 'all') return entries;
+    return entries.filter(e => new Date(e.dateTime) >= startDate);
+  }, [entries, startDate, period]);
+
+  const filteredDailyReviews = useMemo(() => {
+    if (period === 'all') return dailyReviews;
+    return dailyReviews.filter(r => new Date(r.date) >= startDate);
+  }, [dailyReviews, startDate, period]);
+
+  const goodDays = filteredDailyReviews.filter(r => {
     const status = getStatusKey(r.dateStatus);
     return status === 'good';
   }).length;
 
-  const totalDays = entries.length;
-  const goodDaysPercent = totalDays > 0 ? Math.round((goodDays / totalDays) * 100) : 0;
+  const totalDaysInPeriod = period === 'all' 
+    ? getTotalDaysAllTime(entries) 
+    : getTotalDaysInPeriod(startDate, endDate);
 
-  const filteredEntries = useMemo(() => {
-    const now = new Date();
-    switch (period) {
-      case 'week': {
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return entries.filter(e => new Date(e.dateTime) >= weekAgo);
-      }
-      case 'month': {
-        const monthAgo = new Date(now);
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        return entries.filter(e => new Date(e.dateTime) >= monthAgo);
-      }
-      default:
-        return entries;
-    }
-  }, [entries, period]);
+  const goodDaysPercent = totalDaysInPeriod > 0 
+    ? Math.round((goodDays / totalDaysInPeriod) * 100) 
+    : 0;
 
   const stats = useMemo(() => {
     const total = filteredEntries.length;

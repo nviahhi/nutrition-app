@@ -7,3 +7,7 @@
 	opacity: 0.85;
 	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
+
+.day-tooltip-container:hover .tooltip-text {
+	display: block !important;
+}

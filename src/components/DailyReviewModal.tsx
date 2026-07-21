@@ -124,7 +124,7 @@ export const DailyReviewModal: React.FC<DailyReviewModalProps> = ({
               fontSize: '14px',
             }}
           >
-            Закрыть
+            Close
           </button>
         </div>
       </div>
