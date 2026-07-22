@@ -296,7 +296,7 @@ const renderDayCellContent = (arg: any) => {
         justifyContent: 'center',
         marginTop: '2px',
         position: 'relative',
-        zIndex: 1
+        zIndex: 9999
       }}
       className="day-tooltip-container"
     >
@@ -343,7 +343,7 @@ const renderDayCellContent = (arg: any) => {
     </div>
   );
 };
-  
+
 const calendarEvents = useMemo(() => {
   return entries
     .filter((entry): entry is MealEntry & { id: number } => entry.id != null)
@@ -361,6 +361,11 @@ const today = new Date();
 const tomorrow = new Date(today);
 tomorrow.setDate(tomorrow.getDate() + 1);
 const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text) return '';
+  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+};
 
 return (
   <>
@@ -428,11 +433,45 @@ return (
       selectConstraint={{
         start: '2024-01-01', 
         end: tomorrowStr
-      }}        
+      }}
+      eventContent={(arg) => {
+        const title = arg.event.title || '';
+        const timeText = arg.timeText || '';
+        const viewType = arg.view.type;
+        const color = arg.event.backgroundColor || '#3174ad';
+        const maxLength = viewType === 'timeGridDay' ? 350 
+          : viewType === 'timeGridWeek' ? 40 
+          : 20;
+        const truncatedTitle = truncateText(title, maxLength);
+        const isMonthView = viewType === 'dayGridMonth';
+        return {
+          html: `
+            <div style="display: flex; align-items: flex-start; gap: 4px; font-size: 12px;">
+              ${isMonthView ? `
+              <span style="
+                width: 8px;
+                height: 8px;
+                margin-top: 6px;
+                border-radius: 50%;
+                background-color: ${color};
+                flex-shrink: 0;
+                display: inline-block;
+              "></span>
+            ` : ''}
+              <span style="font-weight: bold; background: rgba(0,0,0,0.15); padding: 0 4px; margin-top: 1px; border-radius: 3px; white-space: nowrap;">
+                ${timeText}
+              </span>
+              <span style="flex: 1;">
+                ${truncatedTitle}
+              </span>
+            </div>
+          `
+        };
+      }}  
       eventDrop={handleEventDrop}
       eventClick={handleEventClick}
       dayCellContent={renderDayCellContent} 
-      dateClick={handleDayClick} 
+      dateClick={handleDayClick}
       slotMinTime="06:00:00"
       slotMaxTime="24:00:00"
       allDaySlot={false}

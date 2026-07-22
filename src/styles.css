@@ -11,3 +11,7 @@
 .day-tooltip-container:hover .tooltip-text {
 	display: block !important;
 }
+
+.fc .fc-daygrid-day-number {
+	z-index: 9999;
+}

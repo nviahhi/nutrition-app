@@ -110,6 +110,19 @@ export const PatientMealModal: React.FC<PatientMealModalProps> = ({
           />
         </div>        
 
+        {status && (
+          <div style={{
+            marginBottom: '16px',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            backgroundColor: status === 'good' ? '#d4edda' : '#fff3cd',
+            color: status === 'good' ? '#155724' : '#856404',
+            fontSize: '14px',
+          }}>
+            Rate: <strong>{status === 'good' ? '✅ Good' : '⚠️ Attention'}</strong>
+          </div>
+        )}
+
         {doctorComment && (
           <div style={{
             marginBottom: '16px',
@@ -122,19 +135,6 @@ export const PatientMealModal: React.FC<PatientMealModalProps> = ({
               💬 Nutritionist comments:
             </label>
             <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>{doctorComment}</p>
-          </div>
-        )}
-
-        {status && (
-          <div style={{
-            marginBottom: '16px',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            backgroundColor: status === 'good' ? '#d4edda' : '#fff3cd',
-            color: status === 'good' ? '#155724' : '#856404',
-            fontSize: '14px',
-          }}>
-            Rate: <strong>{status === 'good' ? '✅ Good' : '⚠️ Attention'}</strong>
           </div>
         )}
 
