@@ -11,6 +11,10 @@ import { PatientMealModal } from './PatientMealModal';
 import { AddMealModal } from './AddMealModal';
 import { DailyReviewModal } from './DailyReviewModal';
 import { getStatusKey } from '../utils/statusUtils';
+import { ReviewerSelector } from './ReviewerSelector';
+import { evaluateMealWithAI } from '../services/aiService';
+
+type ReviewerType = 'human' | 'ai';
 
 interface MealCalendarProps {
   patientId: number;
@@ -39,6 +43,7 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
   const [isDailyReviewModalOpen, setIsDailyReviewModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dailyReview, setDailyReview] = useState<DailyReview | null>(null);
+  const [reviewerType, setReviewerType] = useState<ReviewerType>('ai');
 
   const handleSelect = (selectInfo: DateSelectArg) => {
     if (currentUserRole !== 'Patient') return;
@@ -51,6 +56,35 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
 
     setSelectedSlotInfo(selectInfo);
     setIsAddModalOpen(true);
+  };
+
+  const evaluateEntry = async (entry: MealEntry) => {
+    if (reviewerType === 'ai') {
+      const aiResult = await evaluateMealWithAI(
+        entry.ingredients,
+        entry.comment || ''
+      );
+      
+      await saveReview({
+        r_mealEntryId_c_mealEntryId: entry.id!,
+        r_nutritionistId_userId: 0,
+        mealStatus: aiResult.status,
+        comment: aiResult.comment || 'AI review',
+      });
+
+      onReviewUpdate({
+        r_mealEntryId_c_mealEntryId: entry.id!,
+        r_nutritionistId_userId: 0,
+        mealStatus: aiResult.status,
+        comment: aiResult.comment || 'AI review',
+      } as Review);
+    } else {
+      setSelectedEventId(entry.id!);
+      setSelectedEventTitle(entry.ingredients);
+      setCurrentEventStatus(null);
+      setDoctorComment('');
+      setIsModalOpen(true);
+    }
   };
 
   const handleAddMeal = async (ingredients: string, comment: string) => {
@@ -75,6 +109,7 @@ export const MealCalendar: React.FC<MealCalendarProps> = ({ patientId, currentUs
         onEntryAdd(created);
         setIsAddModalOpen(false);
         setSelectedSlotInfo(null);
+        await evaluateEntry(created);
       }
     } catch (error) {
       console.error('Failed to create meal entry:', error);
@@ -416,7 +451,13 @@ return (
         currentComment={dailyReview?.comment || ''}
         date={selectedDate}
       />
-    )}      
+    )}
+    {currentUserRole === 'Patient' && (
+      <ReviewerSelector 
+        selected={reviewerType} 
+        onChange={setReviewerType} 
+      />
+    )}
     <FullCalendar
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
       initialView="timeGridWeek"
@@ -467,7 +508,7 @@ return (
             </div>
           `
         };
-      }}  
+      }}
       eventDrop={handleEventDrop}
       eventClick={handleEventClick}
       dayCellContent={renderDayCellContent} 

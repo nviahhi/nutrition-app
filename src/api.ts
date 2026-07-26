@@ -2,6 +2,7 @@
 import { LiferayUser, MealEntry, Review, DailyReview } from './types';
 
 const LIFERAY_URL = window.location.origin || 'http://localhost:8080';
+export const AI_USER_ID = 0;
 
 function getCsrfToken(): string {
   if (typeof Liferay !== 'undefined' && Liferay.authToken) {
@@ -163,19 +164,22 @@ export async function getReviews(mealEntryId?: number): Promise<Review[]> {
 }
 
 export async function saveReview(review: Omit<Review, 'createdDate'>): Promise<Review> {
+  const payload = {
+    ...review,
+    r_nutritionistId_userId: review.r_nutritionistId_userId || AI_USER_ID,
+  };  
   if (review.id) {
     return request<Review>(`/o/c/reviews/${review.id}`, {
       method: 'PATCH',
-      body: JSON.stringify(review),
+      body: JSON.stringify(payload),
     });
   } else {
     return request<Review>('/o/c/reviews', {
       method: 'POST',
-      body: JSON.stringify(review),
+      body: JSON.stringify(payload),
     });
   }
 }
-
 
 export async function getRoleIdByName(roleName: string): Promise<number | null> {
   try {
