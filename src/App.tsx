@@ -20,6 +20,7 @@ const AppContent: React.FC<{
   const [entries, setEntries] = useState<MealEntry[]>([]);
   const [reviewsMap, setReviewsMap] = useState<Record<number, Review>>({});
   const [dailyReviews, setDailyReviews] = useState<DailyReview[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const addEntries = useCallback((newEntry: MealEntry) => {
     setEntries(prev => [...prev, newEntry]);
@@ -56,7 +57,7 @@ const AppContent: React.FC<{
 
   const loadData = useCallback(async (patientId: number) => {
     if (!patientId) return;
-    
+    setIsLoading(true);
     try {
       const entriesData = await getMealEntries(patientId);
       setEntries(entriesData);
@@ -75,6 +76,8 @@ const AppContent: React.FC<{
 
     } catch (error) {
       console.error('Failed to load data:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -85,6 +88,8 @@ const AppContent: React.FC<{
     } else {
       setEntries([]);
       setReviewsMap({});
+      setDailyReviews([]);
+      setIsLoading(false);
     }
   }, [userId, userRole, selectedPatientId, loadData]);
 
@@ -102,8 +107,14 @@ const AppContent: React.FC<{
         <PatientSelector patients={patients} onSelect={setSelectedPatientId} />
         {selectedPatientId && (
           <>
-            <MealCalendar patientId={selectedPatientId} entries={entries} reviews={reviewsMap} dailyReviews={dailyReviews} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onEntryDelete={deleteEntry} onReviewUpdate={updateReviewsMap} onDailyReviewUpdate={updateDailyReview} currentUserRole="Nutritionist" />
-            <AnalyticsDashboard entries={entries} reviews={reviewsMap} dailyReviews={dailyReviews}/>
+          {isLoading ? (
+            <p>Loading patient data...</p>
+            ) : (
+            <>
+              <MealCalendar patientId={selectedPatientId} entries={entries} reviews={reviewsMap} dailyReviews={dailyReviews} onEntryAdd={addEntries} onEntryUpdate={updateEntries} onEntryDelete={deleteEntry} onReviewUpdate={updateReviewsMap} onDailyReviewUpdate={updateDailyReview} currentUserRole="Nutritionist" />
+              <AnalyticsDashboard entries={entries} reviews={reviewsMap} dailyReviews={dailyReviews}/>
+            </>
+          )}
           </>
         )}
       </div>
