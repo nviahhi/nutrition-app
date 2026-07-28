@@ -305,7 +305,7 @@ const getEventColor = (eventId: number): string => {
   : review.mealStatus;
   
   if (status === 'good') return '#28a745';
-  if (status === 'attention') return '#ffc107';
+  if (status === 'attention') return '#f0b400';
   return '#3174ad';
 };
 
@@ -318,7 +318,7 @@ const renderDayCellContent = (arg: any) => {
   if (!review) return null;
 
   const status = getStatusKey(review.dateStatus);
-  const color = status === 'good' ? '#28a745' : '#ffc107';
+  const color = status === 'good' ? '#28a745' : '#f0b400';
 
   const tooltipText = review.comment 
     ? `Rate: ${status === 'good' ? '✅ Good day' : '⚠️ Attention'}\nComment: ${review.comment}`
