@@ -132,7 +132,7 @@ export const PatientMealModal: React.FC<PatientMealModalProps> = ({
             borderLeft: '4px solid #ffc107',
           }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>
-              💬 Nutritionist comments:
+              💬 Nutritionist/AI comments:
             </label>
             <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>{doctorComment}</p>
           </div>
